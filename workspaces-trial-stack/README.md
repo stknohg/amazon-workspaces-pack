@@ -103,6 +103,22 @@ use1-az6 us-east-1a
 ### 1. CloudFormationスタックの作成
 
 CloudFormationテンプレート [WorkSpacesTrial.yaml](./WorkSpacesTrial.yaml) を使いスタックを作成してください。  
+指定パラメーターは以下の通りです。  
+
+|パラメーター名|説明|デフォルト値|備考|
+|----|----|----|----|
+|SystemName|各リソースに付けるシステム名|workspaces|各リソースは <システム名>-<環境名>-<リソース名>で命名されます|
+|EnvironmentName|各リソースに付ける環境名|trial|各リソースは <システム名>-<環境名>-<リソース名>で命名されます|
+|AZ1|Public Subnet1を配備するAvailability Zone名|-||
+|AZ2|Public Subnet2を配備するAvailability Zone名|-||
+|KeyPairName|EC2で使用するキーペア名|-|キーペアは事前に作成しておいてください|
+|WindowsLatestAmi|EC2のAMI|/aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base|英語OS : /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base も利用可能|
+|MaintenanceCIDR|EC2に接続可能なCIDR|1.2.3.4/32|ここで指定したCIDRからのみRDP接続できます|
+|DomainDNSName|作成されるActive DirectoryのDNS名|corp.contoso.com||
+|DomainNetBIOSName|作成されるActive DirectoryのNetBIOS名|corp||
+|DomainSafeModePassword|ディレクトリサービス復元モード(DSRM)の管理者パスワード|P@ssword|複雑さの要件を満たす必要があります|
+|ADConnectorPassword|AD Connector用ユーザー`adconnector`のパスワード|P@ssword|複雑さの要件を満たす必要があります|
+
 このスタックにより
 
 * VPCをはじめとしたネットワークスタックの作成
