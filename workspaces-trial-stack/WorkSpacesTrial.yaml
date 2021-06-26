@@ -25,7 +25,7 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   WindowsLatestAmi:
     Description: "EC2 AMI image SSM path"
-    Type : AWS::SSM::Parameter::Value<String>
+    Type : AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
     AllowedValues:
     - /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
@@ -299,7 +299,7 @@ Resources:
     Properties:
       GroupId: 
         Fn::GetAtt: ADDSSG.GroupId
-      IpProtocol: -1
+      IpProtocol: "-1"
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId:
@@ -397,7 +397,7 @@ Resources:
           files:
             C:\cfn\install-winfeatures.ps1:
               content:
-                Fn::Sub: |
+                |
                   # We need to specify [Console]::OutputEncoding to UTF8
                   [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -484,7 +484,7 @@ Resources:
                   }
             C:\cfn\install-shortcuts.ps1:
               content:
-                Fn::Sub: |
+                |
                   # We need to specify [Console]::OutputEncoding to UTF8
                   [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -606,7 +606,7 @@ Resources:
                   Write-Output ('{0} : Operation complete.' -f (Get-Date))
             C:\WorkSpacesTools\README.txt:
               content:
-                Fn::Sub: |
+                |
                   # WorkSpaces initial configuration scripts
                   Some scripts for creating AD Connector and WorkSpaces is saved in this folder.
 
@@ -650,7 +650,6 @@ Resources:
       ResourceSignal:
         Count: 1
         Timeout: PT30M
-    DependsOn: WorkSpacesEC2RoleInstanceProfile
     Properties:
       ImageId:
         Ref: WindowsLatestAmi
@@ -671,10 +670,10 @@ Resources:
         - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: 30
-            VolumeType: gp2
+            VolumeType: gp3
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
-          DeviceIndex: 0
+          DeviceIndex: "0"
           SubnetId:
             Ref: PublicSubnet1
           GroupSet:
