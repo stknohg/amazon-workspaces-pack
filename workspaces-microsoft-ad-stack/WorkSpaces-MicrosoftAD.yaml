@@ -1,0 +1,426 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SystemName:
+    Description: "Your system name"
+    Type: String
+    MinLength: 1
+    MaxLength: 10
+    AllowedPattern: "^[a-zA-Z0-9]+$"
+    Default: "wsmsad"
+  EnvironmentName:
+    Description: "Your environment name"
+    Type: String
+    MinLength: 1
+    MaxLength: 10
+    AllowedPattern: "^[a-zA-Z0-9]+$"
+    Default: "prd"
+  VPCID:
+    Description: "Your VPC ID (e.g. vpc-1234567890)"
+    Type: AWS::EC2::VPC::Id
+    Default: ""
+  BastionSubnetID:
+    Description: "Subnet id for deploying bastion (e.g. subnet-1234567890)"
+    Type: AWS::EC2::Subnet::Id
+    Default: ""
+  ADSubnetID1:
+    Description: "Subnet id for deploying MSAD (e.g. subnet-2234567890)"
+    Type: AWS::EC2::Subnet::Id
+    Default: ""
+  ADSubnetID2:
+    Description: "Subnet id for deploying MSAD (e.g. subnet-3234567890)"
+    Type: AWS::EC2::Subnet::Id
+    Default: ""
+  BastionKeyPairName:
+    Description: "EC2 keypair name"
+    Type: AWS::EC2::KeyPair::KeyName
+  BastionAmi:
+    Description: "EC2 AMI image SSM path"
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
+    AllowedValues:
+      - /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
+      - /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base
+  MaintenanceCIDR:
+    Description: "Maintenance location CIDR (set http://checkip.amazonaws.com/ result IP)"
+    Type: String
+    MinLength: 9
+    MaxLength: 19
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: "1.2.3.4/32"
+  MSADEdition:
+    Description: "Directory Edition(Standard or Enterprise)."
+    Type: String
+    Default: "Standard"
+    AllowedValues:
+      - "Standard"
+      - "Enterprise"
+  DomainDNSName:
+    Description: "Your Microsoft AD domain name"
+    Type: String
+    MinLength: 2
+    MaxLength: 255
+    AllowedPattern: "^[a-zA-Z0-9.]+$"
+    Default: "corp.contoso.com"
+  DomainNetBIOSName:
+    Description: "Your Microsoft AD NetBIOS name"
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: "^[a-zA-Z0-9]+$"
+    Default: "corp"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Basic parameters"
+        Parameters:
+          - SystemName
+          - EnvironmentName
+      - Label:
+          default: "Network parameters"
+        Parameters:
+          - VPCID
+          - BastionSubnetID
+          - ADSubnetID1
+          - ADSubnetID2
+      - Label:
+          default: "EC2 parameters"
+        Parameters:
+          - BastionKeyPairName
+          - BastionAmi
+          - MaintenanceCIDR
+      - Label:
+          default: "Active Directory parameters"
+        Parameters:
+          - MSADEdition
+          - DomainDNSName
+          - DomainNetBIOSName
+Resources:
+  # Security Group
+  MaintenanceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName:
+        Fn::Sub: "${SystemName}-${EnvironmentName}-maintenance-sg"
+      GroupDescription: "Security group for maintenance"
+      VpcId:
+        Ref: VPCID
+      SecurityGroupIngress:
+        - Description: "RDP from your Environment"
+          IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp:
+            Ref: MaintenanceCIDR
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${SystemName}-${EnvironmentName}-maintenance-sg"
+
+  # Secret for MSAD
+  MSADSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: "${SystemName}-${EnvironmentName}-msad-admin-initial-password"
+      Description: "Secret used for AWS Managed Microsoft AD Admin initial password"
+      GenerateSecretString:
+        SecretStringTemplate:
+          Fn::Sub: '{"username": "admin@${DomainDNSName}"}'
+        GenerateStringKey: "password"
+        RequireEachIncludedType: true
+        PasswordLength: 20
+
+  # MSAD
+  MSAD:
+    Type: AWS::DirectoryService::MicrosoftAD
+    Properties:
+      Edition:
+        Ref: MSADEdition
+      Name:
+        Ref: DomainDNSName
+      ShortName:
+        Ref: DomainNetBIOSName
+      Password:
+        Fn::Sub: "{{resolve:secretsmanager:${MSADSecret}::password}}"
+      VpcSettings:
+        SubnetIds:
+          - Ref: ADSubnetID1
+          - Ref: ADSubnetID2
+        VpcId:
+          Ref: VPCID
+
+  # IAM Role
+  BastionEC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: "${SystemName}-${EnvironmentName}-bastion-role"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName:
+            Fn::Sub: "${SystemName}-${EnvironmentName}-ws-register"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - workspaces:RegisterWorkspaceDirectory
+                  - workspaces:DeregisterWorkspaceDirectory
+                  - workspaces:ModifySelfservicePermissions
+                  - workdocs:RegisterDirectory
+                  - workdocs:DeregisterDirectory
+                  - ds:DescribeDirectories
+                  - ds:AuthorizeApplication
+                  - ds:UnauthorizeApplication
+                  - ec2:CreateVpc
+                  - ec2:CreateSubnet
+                  - ec2:CreateNetworkInterface
+                  - ec2:CreateInternetGateway
+                  - ec2:CreateRouteTable
+                  - ec2:CreateRoute
+                  - ec2:CreateTags
+                  - ec2:CreateSecurityGroup
+                  - ec2:DescribeInternetGateways
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeRouteTables
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:AttachInternetGateway
+                  - ec2:AssociateRouteTable
+                  - ec2:AuthorizeSecurityGroupEgress
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:DeleteSecurityGroup
+                  - ec2:DeleteNetworkInterface
+                  - ec2:RevokeSecurityGroupEgress
+                  - ec2:RevokeSecurityGroupIngress
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:CreateRole
+                  - iam:PutRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:DeleteRole
+                Resource:
+                  Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/workspaces_DefaultRole"
+        - PolicyName:
+            Fn::Sub: "${SystemName}-${EnvironmentName}-read-secret"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  Ref: MSADSecret
+  # Instance Profile
+  BastionEC2RoleInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName:
+        Fn::Sub: "${SystemName}-${EnvironmentName}-bastion-role"
+      Path: /
+      Roles:
+        - Ref: BastionEC2Role
+
+  # EC2 Instance (Bastion)
+  BastionEC2:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          ascending:
+            - config0
+            - config1
+            - config2
+        config0:
+          files:
+            C:\cfn\install-winfeatures.ps1:
+              content: |
+                # We need to specify [Console]::OutputEncoding to UTF8
+                [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+                Add-WindowsFeature GPMC, RSAT-ADDS, RSAT-AD-PowerShell, RSAT-DNS-Server | Format-List
+            C:\cfn\join-domain.ps1:
+              content:
+                Fn::Sub: |
+                  # We need to specify [Console]::OutputEncoding to UTF8
+                  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+                  $directoryID = '${MSAD}'
+                  $dnsServers = Get-DSDirectory -DirectoryId $directoryID | Select-Object -ExpandProperty DnsIpAddrs
+
+                  # Update DNS configuration
+                  $client = Get-NetAdapter | Get-DnsClient
+                  $client | Set-DnsClientServerAddress -ServerAddresses $dnsServers
+                  $client | Get-DnsClientServerAddress -AddressFamily IPv4
+
+                  # Join domain
+                  $secret = Get-SECSecretValue -SecretId '${MSADSecret}' -Select SecretString | ConvertFrom-Json
+                  $cred = New-Object PSCredential -ArgumentList ($secret.username, (ConvertTo-SecureString $secret.password -AsPlainText -Force)) 
+                  Add-Computer -DomainName '${DomainDNSName}' -Credential $cred -Restart
+            C:\cfn\install-shortcuts.ps1:
+              content: |
+                # We need to specify [Console]::OutputEncoding to UTF8
+                [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+                # Create shortcuts
+                $shell = New-Object -ComObject WScript.Shell
+                @(
+                    @{Link = 'C:\Users\Public\Desktop\Logoff.lnk'; TargetPath = 'C:\Windows\System32\logoff.exe'; IconLocation = 'shell32.dll,27'},
+                    @{Link = 'C:\Users\Public\Desktop\README.lnk'; TargetPath = 'C:\WorkSpacesTools\README.txt'; IconLocation = 'C:\WorkSpacesTools\README.txt'},
+                    @{Link = 'C:\Users\Public\Desktop\WorkSpacesTools.lnk'; TargetPath = 'C:\WorkSpacesTools\'; IconLocation = 'imageres.dll,3'}
+                ) | ForEach-Object {
+                    $s = $shell.CreateShortcut($_.Link)
+                    $s.TargetPath = $_.TargetPath
+                    $s.WorkingDirectory = [IO.Path]::GetDirectoryName($_.TargetPath)
+                    $s.IconLocation = $_.IconLocation
+                    $s.Save()
+                }
+            C:\WorkSpacesTools\01-register-workspacesdirectory.ps1:
+              content:
+                Fn::Sub: |
+                  $directoryID = '${MSAD}'
+                  try {
+                      [void](Get-IAMRole -RoleName 'workspaces_DefaultRole')
+                      Write-Output 'workspaces_DefaultRole role is already exists. Skip creating workspaces_DefaultRole...'
+                  } catch {
+                      Write-Output 'Start creating workspaces_DefaultRole role...'
+                      $params = @{
+                          RoleName  = 'workspaces_DefaultRole'
+                          Description = 'WorkSpaces default role created by user. (not by console!)'
+                          AssumeRolePolicyDocument = 
+                  @'
+                  {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                          {
+                          "Effect": "Allow",
+                          "Principal": {
+                              "Service": "workspaces.amazonaws.com"
+                          },
+                          "Action": "sts:AssumeRole"
+                          }
+                      ]
+                      }
+                  '@
+                      }
+                      $role = New-IAMRole @params
+                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:aws:iam::aws:policy/AmazonWorkSpacesServiceAccess'
+                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:aws:iam::aws:policy/AmazonWorkSpacesSelfServiceAccess'
+                  }
+
+                  Write-Output ('{0} : Register WorkSpaces...' -f (Get-Date))
+                  Set-DefaultAWSRegion -Region ${AWS::Region}
+                  $params = @{
+                      DirectoryId = $directoryID
+                      SubnetId = ('${ADSubnetID1}', '${ADSubnetID2}')
+                      EnableSelfService = $true
+                      EnableWorkDoc = $false
+                  }
+                  Register-WKSWorkspaceDirectory @params
+                  Write-Output ('{0} : Registration complete!' -f (Get-Date))
+            C:\WorkSpacesTools\99-unregister-workspacesdirectory.ps1:
+              content:
+                Fn::Sub: |
+                  $directoryID = '${MSAD}'
+                  if ($null -eq $directoryID) {
+                      Write-Error "Failed to get directoryID."
+                      return
+                  }
+
+                  Write-Output ("{0} : Unregister WorkSpaces..." -f (Get-Date))
+                  Set-DefaultAWSRegion -Region ${AWS::Region}
+                  Unregister-WKSWorkspaceDirectory -DirectoryId $directoryID
+                  Write-Output ("{0} : Unregistration Complete." -f (Get-Date))
+                  Write-Output "---------------------------------------------------------------------"
+                  Write-Output "If you want to remove workspaces_DefaultRole, please remove manually."
+                  Write-Output "---------------------------------------------------------------------"
+            C:\WorkSpacesTools\README.txt:
+              content:
+                Fn::Sub: |
+                  # MSAD Admin password
+                  'Admin' user password is stored at Secrets Manager.
+                  - Read "${SystemName}-${EnvironmentName}-msad-admin-initial-password" secret.
+
+                  # WorkSpaces initial configuration scripts
+                  Some scripts for creating AD Connector and WorkSpaces is saved in this folder.
+
+                  ## Register MSAD to WorkSpaces
+                  - Execute 01-register-workspacesdirectory.ps1 .
+
+                  ## Unregister MSAD to WorkSpaces
+                  - Execute 99-unregister-workspacesdirectory.ps1 .
+          commands:
+            0-set-computer-name:
+              command: powershell.exe -Command Rename-Computer 'bastion' -Restart -Force
+              waitAfterCompletion: forever
+        config1:
+          commands:
+            0-install-winfeatures:
+              command: powershell.exe -ExecutionPolicy Bypass C:\cfn\install-winfeatures.ps1
+              waitAfterCompletion: 0
+            1-join-domain:
+              command: powershell.exe -ExecutionPolicy Bypass C:\cfn\join-domain.ps1
+              waitAfterCompletion: forever
+        config2:
+          commands:
+            0-install-shortcuts:
+              command: powershell.exe -ExecutionPolicy Bypass C:\cfn\install-shortcuts.ps1
+              waitAfterCompletion: 0
+            1-signal-resource:
+              command:
+                Fn::Sub: |
+                  cfn-signal.exe -e %ERRORLEVEL% --resource BastionEC2 --stack ${AWS::StackName} --region ${AWS::Region}
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT30M
+    Properties:
+      ImageId:
+        Ref: BastionAmi
+      UserData:
+        Fn::Base64:
+          Fn::Sub: |
+            <script>
+            cfn-init.exe -v -s ${AWS::StackId} -r BastionEC2 --configsets ascending --region ${AWS::Region}
+            </script>
+      InstanceType: t3.medium
+      IamInstanceProfile:
+        Ref: BastionEC2RoleInstanceProfile
+      KeyName:
+        Ref: BastionKeyPairName
+      DisableApiTermination: false
+      EbsOptimized: false
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          SubnetId:
+            Ref: BastionSubnetID
+          GroupSet:
+            - Ref: MaintenanceSG
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${SystemName}-${EnvironmentName}-bastion"
