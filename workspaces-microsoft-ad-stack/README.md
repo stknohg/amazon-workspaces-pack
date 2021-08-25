@@ -102,7 +102,7 @@ AWS Managed Microsoft ADの管理者ユーザー(`Admin`)の初期パスワー�
 ### 3. WorkSpaces への紐づけ
 
 作成したAWS Managed Microsoft ADをWorkSpacesと紐づけます。  
-踏み台サーバーにログインしてPowerShellコンソールを起動し、`C:\WorkSpacesTools\12-register-workspacesdirectory.ps1` を実行します。  
+踏み台サーバーにログインしてPowerShellコンソールを起動し、`C:\WorkSpacesTools\01-register-workspacesdirectory.ps1` を実行します。  
 エラー無く処理が完了すればWorkSpacesへの紐づけは完了です。  
 
 ```powershell
