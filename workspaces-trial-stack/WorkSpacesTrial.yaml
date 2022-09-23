@@ -16,20 +16,20 @@ Parameters:
     Default: "trial"
   AZ1:
     Description: "public subnet1 AZ name"
-    Type : AWS::EC2::AvailabilityZone::Name
+    Type: AWS::EC2::AvailabilityZone::Name
   AZ2:
     Description: "public subnet2 AZ name"
-    Type : AWS::EC2::AvailabilityZone::Name
+    Type: AWS::EC2::AvailabilityZone::Name
   KeyPairName:
     Description: "EC2 keypair name"
     Type: AWS::EC2::KeyPair::KeyName
   WindowsLatestAmi:
     Description: "EC2 AMI image SSM path"
-    Type : AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
     AllowedValues:
-    - /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
-    - /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base
+      - /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
+      - /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base
   MaintenanceCIDR:
     Description: "Maintenance location CIDR (set http://checkip.amazonaws.com/ result IP)"
     Type: String
@@ -55,7 +55,7 @@ Parameters:
     Description: "DSRM administrator password (plain text, meet complexity requirements)"
     Type: String
     MinLength: 8
-    MaxLength: 256 
+    MaxLength: 256
     Default: "P@ssword"
   ADConnectorPassword:
     Description: "AD Connector user password (plain text, meet complexity requirements)"
@@ -106,47 +106,47 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: 
+          Value:
             Fn::Sub: "${SystemName}-${EnvironmentName}-igw"
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId: 
+      VpcId:
         Ref: VPC
-      InternetGatewayId: 
+      InternetGatewayId:
         Ref: IGW
   # Subnet
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: 
+      AvailabilityZone:
         Ref: AZ1
-      VpcId: 
+      VpcId:
         Ref: VPC
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: True
       Tags:
         - Key: Name
-          Value: 
+          Value:
             Fn::Sub: "${SystemName}-${EnvironmentName}-public-subnet1"
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: 
+      AvailabilityZone:
         Ref: AZ2
-      VpcId: 
+      VpcId:
         Ref: VPC
       CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: True
       Tags:
         - Key: Name
-          Value: 
+          Value:
             Fn::Sub: "${SystemName}-${EnvironmentName}-public-subnet2"
   # Route Tables
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: 
+      VpcId:
         Ref: VPC
       Tags:
         - Key: Name
@@ -162,14 +162,14 @@ Resources:
         Ref: IGW
   PublicRTAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties: 
+    Properties:
       RouteTableId:
         Ref: PublicRouteTable
       SubnetId:
         Ref: PublicSubnet1
   PublicRTAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties: 
+    Properties:
       RouteTableId:
         Ref: PublicRouteTable
       SubnetId:
@@ -189,7 +189,7 @@ Resources:
           IpProtocol: tcp
           FromPort: 3389
           ToPort: 3389
-          CidrIp: 
+          CidrIp:
             Ref: MaintenanceCIDR
       Tags:
         - Key: Name
@@ -276,17 +276,17 @@ Resources:
           CidrIp:
             Fn::GetAtt: VPC.CidrBlock
         - IpProtocol: tcp
-          FromPort: 3268 
+          FromPort: 3268
           ToPort: 3269
           CidrIp:
             Fn::GetAtt: VPC.CidrBlock
         - IpProtocol: udp
-          FromPort: 123 
+          FromPort: 123
           ToPort: 123
           CidrIp:
             Fn::GetAtt: VPC.CidrBlock
         - IpProtocol: udp
-          FromPort: 138 
+          FromPort: 138
           ToPort: 138
           CidrIp:
             Fn::GetAtt: VPC.CidrBlock
@@ -297,7 +297,7 @@ Resources:
   ADDSSGSelfRefIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: 
+      GroupId:
         Fn::GetAtt: ADDSSG.GroupId
       IpProtocol: "-1"
       FromPort: -1
@@ -328,7 +328,7 @@ Resources:
             Fn::Sub: "${SystemName}-${EnvironmentName}-ws-administrator"
           PolicyDocument:
             Version: 2012-10-17
-            Statement: 
+            Statement:
               - Effect: Allow
                 Action:
                   - workspaces:*
@@ -351,8 +351,8 @@ Resources:
                   - ec2:DescribeSecurityGroups
                   - ec2:DescribeRouteTables
                   - ec2:DescribeVpcs
-                  - ec2:DescribeSubnets 
-                  - ec2:DescribeNetworkInterfaces 
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeNetworkInterfaces
                   - ec2:DescribeAvailabilityZones
                   - ec2:AttachInternetGateway
                   - ec2:AssociateRouteTable
@@ -396,9 +396,8 @@ Resources:
         config0:
           files:
             C:\cfn\install-winfeatures.ps1:
-              content:
-                |
-                  Add-WindowsFeature AD-Domain-Services, GPMC, RSAT-ADDS, RSAT-AD-PowerShell, RSAT-DNS-Server | Format-List
+              content: |
+                Add-WindowsFeature AD-Domain-Services, GPMC, RSAT-ADDS, RSAT-AD-PowerShell, RSAT-DNS-Server | Format-List
             C:\cfn\install-adds.ps1:
               content:
                 Fn::Sub: |
@@ -474,21 +473,20 @@ Resources:
                       New-ADUser @Params
                   }
             C:\cfn\install-shortcuts.ps1:
-              content:
-                |
-                  # Create shortcuts
-                  $shell = New-Object -ComObject WScript.Shell
-                  @(
-                      @{Link = 'C:\Users\Public\Desktop\Logoff.lnk'; TargetPath = 'C:\Windows\System32\logoff.exe'; IconLocation = 'shell32.dll,27'},
-                      @{Link = 'C:\Users\Public\Desktop\README.lnk'; TargetPath = 'C:\WorkSpacesTools\README.txt'; IconLocation = 'C:\WorkSpacesTools\README.txt'},
-                      @{Link = 'C:\Users\Public\Desktop\WorkSpacesTools.lnk'; TargetPath = 'C:\WorkSpacesTools\'; IconLocation = 'imageres.dll,3'}
-                  ) | ForEach-Object {
-                      $s = $shell.CreateShortcut($_.Link)
-                      $s.TargetPath = $_.TargetPath
-                      $s.WorkingDirectory = [IO.Path]::GetDirectoryName($_.TargetPath)
-                      $s.IconLocation = $_.IconLocation
-                      $s.Save()
-                  }
+              content: |
+                # Create shortcuts
+                $shell = New-Object -ComObject WScript.Shell
+                @(
+                    @{Link = 'C:\Users\Public\Desktop\Logoff.lnk'; TargetPath = 'C:\Windows\System32\logoff.exe'; IconLocation = 'shell32.dll,27'},
+                    @{Link = 'C:\Users\Public\Desktop\README.lnk'; TargetPath = 'C:\WorkSpacesTools\README.txt'; IconLocation = 'C:\WorkSpacesTools\README.txt'},
+                    @{Link = 'C:\Users\Public\Desktop\WorkSpacesTools.lnk'; TargetPath = 'C:\WorkSpacesTools\'; IconLocation = 'imageres.dll,3'}
+                ) | ForEach-Object {
+                    $s = $shell.CreateShortcut($_.Link)
+                    $s.TargetPath = $_.TargetPath
+                    $s.WorkingDirectory = [IO.Path]::GetDirectoryName($_.TargetPath)
+                    $s.IconLocation = $_.IconLocation
+                    $s.Save()
+                }
             C:\WorkSpacesTools\01-cretate-adconnector.ps1:
               content:
                 Fn::Sub: |
@@ -593,23 +591,22 @@ Resources:
                   Write-Output ('{0} : AD Connector stage is {1}...' -f (Get-Date), $stage)
                   Write-Output ('{0} : Operation complete.' -f (Get-Date))
             C:\WorkSpacesTools\README.txt:
-              content:
-                |
-                  # WorkSpaces initial configuration scripts
-                  Some scripts for creating AD Connector and WorkSpaces is saved in this folder.
+              content: |
+                # WorkSpaces initial configuration scripts
+                Some scripts for creating AD Connector and WorkSpaces is saved in this folder.
 
-                  ## Create AD Connector
-                  - Execute 01-cretate-adconnector.ps1 .
-                  -- Do not delete "C:\WorkSpacesTools\adconnector.id.txt"
+                ## Create AD Connector
+                - Execute 01-cretate-adconnector.ps1 .
+                -- Do not delete "C:\WorkSpacesTools\adconnector.id.txt"
 
-                  ## Register AD Connector to WorkSpaces
-                  - Execute 02-register-workspacesdirectory.ps1 .
+                ## Register AD Connector to WorkSpaces
+                - Execute 02-register-workspacesdirectory.ps1 .
 
-                  ## Unregister AD Connector to WorkSpaces
-                  - Execute 98-unregister-workspacesdirectory.ps1 .
+                ## Unregister AD Connector to WorkSpaces
+                - Execute 98-unregister-workspacesdirectory.ps1 .
 
-                  ## Delete AD Connector
-                  - Execute 99-delete-adconnector.ps1 .
+                ## Delete AD Connector
+                - Execute 99-delete-adconnector.ps1 .
           commands:
             0-set-computer-name:
               command: powershell.exe -Command Rename-Computer 'ADDS' -Restart -Force
@@ -633,7 +630,7 @@ Resources:
             2-signal-resource:
               command:
                 Fn::Sub: |
-                  cfn-signal.exe -e %ERRORLEVEL% --resource ADDSEC2 --stack ${AWS::StackName} --region ${AWS::Region}   
+                  cfn-signal.exe -e %ERRORLEVEL% --resource ADDSEC2 --stack ${AWS::StackName} --region ${AWS::Region}
     CreationPolicy:
       ResourceSignal:
         Count: 1
