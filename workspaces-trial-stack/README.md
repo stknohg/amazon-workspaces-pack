@@ -6,7 +6,7 @@
 
 ![Architecture](./assets/architecture.png)
 
-`10.0.0.0/16`のVPCに2つのPublic Subnet(`10.0.1.0/24`, `10.0.2.0/24`)を作成、その中にドメインコントローラー兼踏み台サーバーとなるWindows Server 2019 EC2インスタンスを1台、AD Connector、WorkSpacesを配置する構成となります。 
+`10.0.0.0/16`のVPCに2つのPublic Subnet(`10.0.1.0/24`, `10.0.2.0/24`)を作成、その中にドメインコントローラー兼踏み台サーバーとなるWindows Server 2022 EC2インスタンスを1台、AD Connector、WorkSpacesを配置する構成となります。 
 
 EC2インスタンスではCLI(AWS Tools for PowerShell)によるWorkSpacesの管理も行える様にWorkSpacesの管理者相当の権限をもつIAMロールをアタッチしてます。  
 このロールは初期導入時にも利用されます。    
@@ -54,7 +54,7 @@ use1-az5 us-east-1f
 use1-az6 us-east-1a
 ```
 
-## 構成上の注意点
+## :warning: 構成上の注意点 :warning:
 
 本テンプレートでは簡易にWorkSpacesを試すためにいくつか本番環境では推奨されない構成を採っています。  
 このため本テンプレートを本番環境で使わないでください。  
@@ -112,7 +112,7 @@ CloudFormationテンプレート [WorkSpacesTrial.yaml](./WorkSpacesTrial.yaml) 
 |AZ1|Public Subnet1を配備するAvailability Zone名|-||
 |AZ2|Public Subnet2を配備するAvailability Zone名|-||
 |KeyPairName|EC2で使用するキーペア名|-|キーペアは事前に作成しておいてください|
-|WindowsLatestAmi|EC2のAMI|/aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base|英語OS : /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base も利用可能|
+|WindowsLatestAmi|EC2のAMI|/aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base|英語OS : /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base も利用可能|
 |MaintenanceCIDR|EC2に接続可能なCIDR|1.2.3.4/32|ここで指定したCIDRからのみRDP接続できます|
 |DomainDNSName|作成されるActive DirectoryのDNS名|corp.contoso.com||
 |DomainNetBIOSName|作成されるActive DirectoryのNetBIOS名|corp||
