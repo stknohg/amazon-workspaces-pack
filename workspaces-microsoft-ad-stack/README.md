@@ -68,7 +68,7 @@ CloudFormationテンプレート [WorkSpaces-MicrosoftAD.yaml](./WorkSpaces-Micr
 |ADSubnetID1|AWS Managed Microsoft ADを配備する1つめのSubnet ID|-||
 |ADSubnetID2|AWS Managed Microsoft ADを配備する2つめのSubnet ID|-|ADSubnetID1とは異なるSubnetにしてください|
 |BastionKeyPairName|踏み台サーバーで使用するキーペア名|-|キーペアは事前に作成しておいてください|
-|BastionAmi|踏み台サーバーのAMI|/aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base|英語OS : /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base も利用可能|
+|BastionAmi|踏み台サーバーのAMI|/aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base|英語OS : /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base も利用可能|
 |MaintenanceCIDR|踏み台サーバーに接続可能なCIDR|1.2.3.4/32|ここで指定したCIDRからのみRDP接続できます|
 |MSADEdition|AWS Managed Microsoft ADのエディション|Standard|StandardかEnterpriseから選択|
 |DomainDNSName|作成するActive DirectoryのDNS名|corp.contoso.com||
