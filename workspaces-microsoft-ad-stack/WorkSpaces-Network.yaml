@@ -112,7 +112,7 @@ Resources:
         Ref: VPC
       CidrBlock:
         Ref: PublicSubnet1CIDR
-      MapPublicIpOnLaunch: True
+      MapPublicIpOnLaunch: False
       Tags:
         - Key: Name
           Value:
@@ -126,7 +126,7 @@ Resources:
         Ref: VPC
       CidrBlock:
         Ref: PublicSubnet2CIDR
-      MapPublicIpOnLaunch: True
+      MapPublicIpOnLaunch: False
       Tags:
         - Key: Name
           Value:
