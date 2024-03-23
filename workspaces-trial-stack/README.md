@@ -24,34 +24,44 @@ WorkSpacesはリージョン毎でサポートされるAvailability IDが決ま�
 * 参考 : [Availability Zones for Amazon WorkSpaces](https://docs.aws.amazon.com/workspaces/latest/adminguide/azs-workspaces.html)
 
 なお、アカウント毎でAvailablity Zoneの名前とIDの紐づけは異なるので適宜確認してください。  
-例えばAWS Tools for PowerShellからだと以下の様にして確認できます。  
+例えばAWS CLIからだと以下のコマンドで確認できます。  
 
-```powershell
-# AWS Tools for PowerShellの Get-EC2AvailabilityZone を使うとAvailablity Zone IDを参照できる
-Get-EC2AvailabilityZone -Region ap-northeast-1 | Select-Object ZoneId, ZoneName | Sort-Object ZoneId
+```bash
+# AWS CLIの aws ec2 describe-availability-zones を使うとAvailablity Zone IDを参照できる
+aws ec2 describe-availability-zones --query 'sort_by(AvailabilityZones, &ZoneId)[].{ZoneId:ZoneId, ZoneName:ZoneName}' --output table
+```
 
+CloudShellでコマンドを実行すると良いでしょう。  
+
+```bash
 # 実行例
 #
 # ※ 結果はアカウント毎で異なります ※
 #
-> Get-EC2AvailabilityZone -Region ap-northeast-1 | Select-Object ZoneId, ZoneName | Sort-Object ZoneId
+$ aws ec2 describe-availability-zones --query 'sort_by(AvailabilityZones, &ZoneId)[].{ZoneId:ZoneId, ZoneName:ZoneName}' --output table
+----------------------------------
+|    DescribeAvailabilityZones   |
++------------+-------------------+
+|   ZoneId   |     ZoneName      |
++------------+-------------------+
+|  apne1-az1 |  ap-northeast-1c  |
+|  apne1-az2 |  ap-northeast-1d  |
+|  apne1-az4 |  ap-northeast-1a  |
++------------+-------------------+
 
-ZoneId    ZoneName
-------    --------
-apne1-az1 ap-northeast-1c
-apne1-az2 ap-northeast-1d
-apne1-az4 ap-northeast-1a
-
-> Get-EC2AvailabilityZone -Region us-east-1 | Select-Object ZoneId, ZoneName | Sort-Object ZoneId
-
-ZoneId   ZoneName
-------   --------
-use1-az1 us-east-1b
-use1-az2 us-east-1c
-use1-az3 us-east-1e
-use1-az4 us-east-1d
-use1-az5 us-east-1f
-use1-az6 us-east-1a
+$ aws ec2 describe-availability-zones --query 'sort_by(AvailabilityZones, &ZoneId)[].{ZoneId:ZoneId, ZoneName:ZoneName}' --region us-east-1 --output table
+----------------------------
+| DescribeAvailabilityZones|
++-----------+--------------+
+|  ZoneId   |  ZoneName    |
++-----------+--------------+
+|  use1-az1 |  us-east-1b  |
+|  use1-az2 |  us-east-1c  |
+|  use1-az3 |  us-east-1e  |
+|  use1-az4 |  us-east-1d  |
+|  use1-az5 |  us-east-1f  |
+|  use1-az6 |  us-east-1a  |
++-----------+--------------+
 ```
 
 ## :warning: 構成上の注意点 :warning:
