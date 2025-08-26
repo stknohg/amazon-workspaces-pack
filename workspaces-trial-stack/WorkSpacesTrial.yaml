@@ -28,10 +28,21 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base
     AllowedValues:
+      - /aws/service/ami-windows-latest/Windows_Server-2025-Japanese-Full-Base
+      - /aws/service/ami-windows-latest/Windows_Server-2025-English-Full-Base
       - /aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base
       - /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base
       - /aws/service/ami-windows-latest/Windows_Server-2019-Japanese-Full-Base
       - /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base
+  InstanceType:
+    Description: "EC2 instance type"
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - m7i-flex.large
   MaintenanceCIDR:
     Description: "Maintenance location CIDR (set http://checkip.amazonaws.com/ result IP)"
     Type: String
@@ -83,6 +94,7 @@ Metadata:
         Parameters:
           - KeyPairName
           - WindowsLatestAmi
+          - InstanceType
           - MaintenanceCIDR
       - Label:
           default: "Active Directory parameters"
@@ -302,8 +314,6 @@ Resources:
       GroupId:
         Fn::GetAtt: ADDSSG.GroupId
       IpProtocol: "-1"
-      FromPort: -1
-      ToPort: -1
       SourceSecurityGroupId:
         Fn::GetAtt: ADDSSG.GroupId
 
@@ -409,20 +419,30 @@ Resources:
                   # We need to specify [Console]::OutputEncoding to UTF8
                   [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+                  $ForestMode , $DomainMode = switch ($PSVersionTable.BuildVersion) {
+                      { $_ -gt '10.0.26100.0' } {
+                          'Win2025', 'Win2025'
+                          break
+                      }
+                      Default {
+                          'WinThreshold', 'WinThreshold'
+                      }
+                  }
+
                   Import-Module ADDSDeployment
                   $params = @{
-                      DomainName        = '${DomainDNSName}';
-                      DomainNetbiosName = '${DomainNetBIOSName}';
-                      ForestMode        = 'WinThreshold';
-                      DomainMode        = 'WinThreshold';
-                      DatabasePath      = 'C:\Windows\NTDS';
-                      LogPath           = 'C:\Windows\NTDS';
-                      SysvolPath        = 'C:\Windows\SYSVOL';
+                      DomainName                    = '${DomainDNSName}';
+                      DomainNetbiosName             = '${DomainNetBIOSName}';
+                      ForestMode                    = $ForestMode;
+                      DomainMode                    = $DomainMode;
+                      DatabasePath                  = 'C:\Windows\NTDS';
+                      LogPath                       = 'C:\Windows\NTDS';
+                      SysvolPath                    = 'C:\Windows\SYSVOL';
                       SafeModeAdministratorPassword = (ConvertTo-SecureString '${DomainSafeModePassword}' -AsPlainText -Force);
-                      InstallDns           = $true;
-                      CreateDnsDelegation  = $false;
-                      NoRebootOnCompletion = $false;
-                      Confirm = $false;
+                      InstallDns                    = $true;
+                      CreateDnsDelegation           = $false;
+                      NoRebootOnCompletion          = $false;
+                      Confirm                       = $false;
                   }
                   Install-ADDSForest @params
             C:\cfn\add-adusers.ps1:
@@ -658,13 +678,13 @@ Resources:
             <script>
             cfn-init.exe -v -s ${AWS::StackId} -r ADDSEC2 --configsets ascending --region ${AWS::Region}
             </script>
-      InstanceType: t3.medium
+      InstanceType:
+        Ref: InstanceType
       IamInstanceProfile:
         Ref: WorkSpacesEC2RoleInstanceProfile
       KeyName:
         Ref: KeyPairName
       DisableApiTermination: false
-      EbsOptimized: false
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
