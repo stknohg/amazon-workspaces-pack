@@ -589,9 +589,8 @@ Resources:
                       DirectoryId = $directoryID
                       SubnetId = ('${PublicSubnet1}', '${PublicSubnet2}')
                       EnableSelfService = $true
-                      EnableWorkDoc = $false
                   }
-                  Register-WKSWorkspaceDirectory @params
+                  Register-WKSWorkspaceDirectory @params | Out-Null
                   Write-Output ('{0} : Registration complete!' -f (Get-Date))
             C:\WorkSpacesTools\98-unregister-workspacesdirectory.ps1:
               content:
