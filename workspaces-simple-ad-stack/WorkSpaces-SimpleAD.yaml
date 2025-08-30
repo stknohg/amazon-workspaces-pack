@@ -17,19 +17,15 @@ Parameters:
   VPCID:
     Description: "Your VPC ID (e.g. vpc-1234567890)"
     Type: AWS::EC2::VPC::Id
-    Default: ""
   BastionSubnetID:
     Description: "Subnet id for deploying bastion (e.g. subnet-1234567890)"
     Type: AWS::EC2::Subnet::Id
-    Default: ""
   ADSubnetID1:
     Description: "Subnet id for deploying Simple AD (e.g. subnet-2234567890)"
     Type: AWS::EC2::Subnet::Id
-    Default: ""
   ADSubnetID2:
     Description: "Subnet id for deploying Simple AD (e.g. subnet-3234567890)"
     Type: AWS::EC2::Subnet::Id
-    Default: ""
   BastionKeyPairName:
     Description: "EC2 keypair name"
     Type: AWS::EC2::KeyPair::KeyName
@@ -120,6 +116,8 @@ Resources:
   # Secret for Simple AD
   SADSecret:
     Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       Name:
         Fn::Sub: "${SystemName}-${EnvironmentName}-sad-admin-initial-password"
@@ -219,7 +217,7 @@ Resources:
                   - iam:ListRolePolicies
                   - iam:DeleteRole
                 Resource:
-                  Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/workspaces_DefaultRole"
+                  Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/workspaces_DefaultRole"
         - PolicyName:
             Fn::Sub: "${SystemName}-${EnvironmentName}-read-secret"
           PolicyDocument:
@@ -315,8 +313,8 @@ Resources:
                   '@
                       }
                       $role = New-IAMRole @params
-                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:aws:iam::aws:policy/AmazonWorkSpacesServiceAccess'
-                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:aws:iam::aws:policy/AmazonWorkSpacesSelfServiceAccess'
+                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:${AWS::Partition}:iam::aws:policy/AmazonWorkSpacesServiceAccess'
+                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:${AWS::Partition}:iam::aws:policy/AmazonWorkSpacesSelfServiceAccess'
                   }
 
                   Write-Output ('{0} : Register WorkSpaces...' -f (Get-Date))

@@ -384,7 +384,7 @@ Resources:
                   - iam:ListRolePolicies
                   - iam:DeleteRole
                 Resource:
-                  Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/workspaces_DefaultRole"
+                  Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/workspaces_DefaultRole"
   # Instance Profile
   WorkSpacesEC2RoleInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -579,8 +579,8 @@ Resources:
                   '@
                       }
                       $role = New-IAMRole @params
-                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:aws:iam::aws:policy/AmazonWorkSpacesServiceAccess'
-                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:aws:iam::aws:policy/AmazonWorkSpacesSelfServiceAccess'
+                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:${AWS::Partition}:iam::aws:policy/AmazonWorkSpacesServiceAccess'
+                      Register-IAMRolePolicy -RoleName $role.RoleName -PolicyArn 'arn:${AWS::Partition}:iam::aws:policy/AmazonWorkSpacesSelfServiceAccess'
                   }
 
                   Write-Output ('{0} : Register WorkSpaces...' -f (Get-Date))
