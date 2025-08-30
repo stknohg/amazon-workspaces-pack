@@ -253,10 +253,16 @@ Resources:
           files:
             C:\cfn\install-winfeatures.ps1:
               content: |
+                # We need to specify [Console]::OutputEncoding to UTF8
+                [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
                 Add-WindowsFeature GPMC, RSAT-ADDS, RSAT-AD-PowerShell, RSAT-DNS-Server | Format-List
             C:\cfn\join-domain.ps1:
               content:
                 Fn::Sub: |
+                  # We need to specify [Console]::OutputEncoding to UTF8
+                  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
                   $directoryID = '${SimpleAD}'
                   $dnsServers = Get-DSDirectory -DirectoryId $directoryID | Select-Object -ExpandProperty DnsIpAddrs
 
@@ -271,6 +277,9 @@ Resources:
                   Add-Computer -DomainName '${DomainDNSName}' -Credential $cred -Restart
             C:\cfn\install-shortcuts.ps1:
               content: |
+                # We need to specify [Console]::OutputEncoding to UTF8
+                [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
                 # Create shortcuts
                 $shell = New-Object -ComObject WScript.Shell
                 @(
