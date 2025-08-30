@@ -36,10 +36,10 @@ Parameters:
   BastionAmi:
     Description: "EC2 AMI image SSM path"
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base
+    Default: /aws/service/ami-windows-latest/Windows_Server-2025-Japanese-Full-Base
     AllowedValues:
-      - /aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base
-      - /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base
+      - /aws/service/ami-windows-latest/Windows_Server-2025-Japanese-Full-Base
+      - /aws/service/ami-windows-latest/Windows_Server-2025-English-Full-Base
   MaintenanceCIDR:
     Description: "Maintenance location CIDR (set http://checkip.amazonaws.com/ result IP)"
     Type: String
