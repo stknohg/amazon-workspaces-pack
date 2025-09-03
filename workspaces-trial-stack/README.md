@@ -124,7 +124,7 @@ CloudFormationテンプレート [WorkSpacesTrial.yaml](./WorkSpacesTrial.yaml) 
 |KeyPairName|EC2で使用するキーペア名|-|キーペアは事前に作成しておいてください|
 |WindowsLatestAmi|EC2のAMI|/aws/service/ami-windows-latest/Windows_Server-2022-Japanese-Full-Base|英語OS : /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base も利用可能|
 |InstanceType|EC2のインスタンスタイプ|t3.medium|Windows Server 2025の場合は`m7i-flex.large`推奨|
-|MaintenanceCIDR|EC2に接続可能なCIDR|1.2.3.4/32|ここで指定したCIDRからのみRDP接続できます|
+|MaintenanceCIDR|EC2に接続可能なCIDR|203.0.113.1/32|ここで指定したCIDRからのみRDP接続できます|
 |DomainDNSName|作成されるActive DirectoryのDNS名|corp.contoso.com||
 |DomainNetBIOSName|作成されるActive DirectoryのNetBIOS名|corp||
 |DomainSafeModePassword|ディレクトリサービス復元モード(DSRM)の管理者パスワード|P@ssword|複雑さの要件を満たす必要があります|
