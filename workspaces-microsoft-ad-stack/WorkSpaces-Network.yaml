@@ -160,49 +160,17 @@ Resources:
           Value:
             Fn::Sub: "${SystemName}-${EnvironmentName}-private-subnet2"
 
-  # EIP, NAT Gateway
-  EIP1:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-eip1"
-  EIP2:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-eip2"
-  NGW1:
+  # Regional NAT Gateway
+  RegionalNGW:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId:
-        Fn::GetAtt:
-          - EIP1
-          - AllocationId
-      SubnetId:
-        Ref: PublicSubnet1
+      AvailabilityMode: regional
+      VpcId:
+        Ref: VPC
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-ngw1"
-  NGW2:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId:
-        Fn::GetAtt:
-          - EIP2
-          - AllocationId
-      SubnetId:
-        Ref: PublicSubnet2
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-ngw2"
+            Fn::Sub: "${SystemName}-${EnvironmentName}-regional-ngw"
 
   # Route Tables
   Public1RouteTable:
@@ -269,7 +237,7 @@ Resources:
         Ref: Private1RouteTable
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId:
-        Ref: NGW1
+        Ref: RegionalNGW
   Private1RTAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -293,7 +261,7 @@ Resources:
         Ref: Private2RouteTable
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId:
-        Ref: NGW2
+        Ref: RegionalNGW
   Private2RTAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
