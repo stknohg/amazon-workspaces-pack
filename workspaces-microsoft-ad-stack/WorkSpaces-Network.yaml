@@ -173,7 +173,7 @@ Resources:
             Fn::Sub: "${SystemName}-${EnvironmentName}-regional-ngw"
 
   # Route Tables
-  Public1RouteTable:
+  PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId:
@@ -181,47 +181,30 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-public1-rtb"
-  Public1Route1:
+            Fn::Sub: "${SystemName}-${EnvironmentName}-public-rtb"
+  PublicRoute1:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId:
-        Ref: Public1RouteTable
+        Ref: PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId:
         Ref: IGW
-  Public1RTAssociation:
+  PublicRTAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Ref: Public1RouteTable
+        Ref: PublicRouteTable
       SubnetId:
         Ref: PublicSubnet1
-  Public2RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        Ref: VPC
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-public2-rtb"
-  Public2Route1:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId:
-        Ref: Public2RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: IGW
-  Public2RTAssociation:
+  PublicRTAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Ref: Public2RouteTable
+        Ref: PublicRouteTable
       SubnetId:
         Ref: PublicSubnet2
-  Private1RouteTable:
+  PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId:
@@ -229,43 +212,26 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-private1-rtb"
-  Private1Route1:
+            Fn::Sub: "${SystemName}-${EnvironmentName}-private-rtb"
+  PrivateRoute1:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId:
-        Ref: Private1RouteTable
+        Ref: PrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId:
         Ref: RegionalNGW
-  Private1RTAssociation:
+  PrivateRTAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Ref: Private1RouteTable
+        Ref: PrivateRouteTable
       SubnetId:
         Ref: PrivateSubnet1
-  Private2RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        Ref: VPC
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${SystemName}-${EnvironmentName}-private2-rtb"
-  Private2Route1:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId:
-        Ref: Private2RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: RegionalNGW
-  Private2RTAssociation:
+  PrivateRTAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Ref: Private2RouteTable
+        Ref: PrivateRouteTable
       SubnetId:
         Ref: PrivateSubnet2
